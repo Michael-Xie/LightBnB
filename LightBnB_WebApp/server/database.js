@@ -19,16 +19,14 @@ const users = require('./json/users.json');
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
-  }
-  return Promise.resolve(user);
+  const queryString = `
+  SELECT *
+  FROM users
+  WHERE email = $1;
+  `;
+  const values = [email];
+  return pool.query(queryString, values)
+    .then((res) => res.rows[0] || null);
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -38,7 +36,14 @@ exports.getUserWithEmail = getUserWithEmail;
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function(id) {
-  return Promise.resolve(users[id]);
+  const queryString = `
+  SELECT *
+  FROM users
+  WHERE id = $1;
+  `;
+  const values = [id];
+  return pool.query(queryString, values)
+    .then((res) => res.rows[0] || null);
 }
 exports.getUserWithId = getUserWithId;
 
@@ -49,10 +54,18 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser =  function(user) {
-  const userId = Object.keys(users).length + 1;
-  user.id = userId;
-  users[userId] = user;
-  return Promise.resolve(user);
+  const queryString = `
+  INSERT INTO users (name, password, email) VALUES (
+    $1, $2, $3
+  ) RETURNING *;
+  `;
+  const values = [user.name, user.password, user.email];
+  return pool.query(queryString, values)
+    .then((res) => res.rows[0]);
+  // const userId = Object.keys(users).length + 1;
+  // user.id = userId;
+  // users[userId] = user;
+  // return Promise.resolve(user);
 }
 exports.addUser = addUser;
 
